@@ -26,7 +26,7 @@ import com.amazonaws.services.sqs.model.SendMessageRequest;
  * Modified version of code example in Chapter 4 of "Java Message Service", 2nd
  * Ed, O'Reilly which replaces JMS with SQS.
  *
- * @author markus klems
+ * @author marco peise
  *
  */
 public class SqsBorrower {
