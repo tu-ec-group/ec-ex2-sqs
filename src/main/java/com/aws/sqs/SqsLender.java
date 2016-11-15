@@ -58,50 +58,48 @@ public class SqsLender {
 	}
 
 	public void processLoans() {
-		// TODO Prepare receive loan request message request.
-		//ReceiveMessageRequest receiveLoanRequestMessageRequest = ...
+		ReceiveMessageRequest receiveLoanRequestMessageRequest = new ReceiveMessageRequest(requestQ).withMessageAttributeNames("uuid");
 		while (true) {
 			// Prepare loan response message request.
 			SendMessageRequest loanResponseMessageRequest = new SendMessageRequest();
 			loanResponseMessageRequest.setQueueUrl(responseQ);
-			// TODO Check request queue for loan requests.
-			// List<Message> messages = ...
-			//for (Message loanRequestMessage : messages) {
-			//	StringTokenizer st = new StringTokenizer(
-			//			loanRequestMessage.getBody(), ",");
-			//	double salary = Double.valueOf(st.nextToken().trim())
-			//			.doubleValue();
-			//	double loanAmt = Double.valueOf(st.nextToken().trim())
-			//			.doubleValue();
-			//	// Determine whether to accept or decline the loan request
-			//	boolean accepted = false;
-			//	if (loanAmt < 200000) {
-			//		accepted = (salary / loanAmt) > .25;
-			//	} else {
-			//		accepted = (salary / loanAmt) > .33;
-			//	}
-			//	System.out.println("" + "Percent = " + (salary / loanAmt)
-			//			+ ", loan is " + (accepted ? "Accepted!" : "Declined"));
-			//	loanResponseMessageRequest
-			//			.setMessageBody((accepted ? "Accepted your request for $"
-			//					+ loanAmt
-			//					: "Declined your request for $" + loanAmt));
-			//
-			//	for (Entry<String, MessageAttributeValue> entry : loanRequestMessage
-			//			.getMessageAttributes().entrySet()) {
-			//		if (entry.getKey().equals("uuid")) {
-			//			loanResponseMessageRequest.addMessageAttributesEntry(
-			//					"uuid", entry.getValue());
-			//		}
-			//	}
-				// TODO Delete loan request message from queue
+			List<Message> messages = sqs.receiveMessage(receiveLoanRequestMessageRequest).getMessages();
+			for (Message loanRequestMessage : messages) {
+				StringTokenizer st = new StringTokenizer(
+						loanRequestMessage.getBody(), ",");
+				double salary = Double.valueOf(st.nextToken().trim());
+				double loanAmt = Double.valueOf(st.nextToken().trim());
+				// Determine whether to accept or decline the loan request
+				boolean accepted = false;
+				if (loanAmt < 200000) {
+					accepted = (salary / loanAmt) > .25;
+				} else {
+					accepted = (salary / loanAmt) > .33;
+				}
+				System.out.println("" + "Percent = " + (salary / loanAmt)
+						+ ", loan is " + (accepted ? "Accepted!" : "Declined"));
+				loanResponseMessageRequest
+						.setMessageBody((accepted ? "Accepted your request for $"
+								+ loanAmt
+								: "Declined your request for $" + loanAmt));
+
+				for (Entry<String, MessageAttributeValue> entry : loanRequestMessage
+						.getMessageAttributes().entrySet()) {
+					if (entry.getKey().equals("uuid")) {
+						loanResponseMessageRequest.addMessageAttributesEntry(
+								"uuid", entry.getValue());
+					}
+				}
+				sqs.deleteMessage(new DeleteMessageRequest(requestQ, loanRequestMessage.getReceiptHandle()));
 			// ...
-				// TODO Send out the response
+				sqs.sendMessage(loanResponseMessageRequest);
+				System.out.println("message sent!");
+
 			// ...
-			//}
+			}
 
 			try {
-				Thread.sleep(5000);
+				Thread.sleep(500);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

@@ -75,32 +75,33 @@ public class SqsBorrower {
 		loanRequestMessageRequest.setMessageBody(salary + "," + loanAmt);
 		sqs.sendMessage(loanRequestMessageRequest);
 
-		// TODO check response queue for matching responses
-		// ReceiveMessageRequest receiveMessageRequest = ...
+		ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(responseQ).withMessageAttributeNames("uuid");
 		boolean response = false;
 		System.out.println("Waiting for responses...");
 		while (!response) {
-			//List<Message> messages = sqs.receiveMessage(receiveMessageRequest)
-			//		.getMessages();
-			//for (Message lenderResponseMessage : messages) {
-			//	for (Entry<String, MessageAttributeValue> entry : lenderResponseMessage
-			//			.getMessageAttributes().entrySet()) {
-			//		if (entry.getKey().equals("uuid")
-			//				&& entry.getValue().getStringValue()
-			//						.equals(uuid.toString())) {
-			//			String messageRecieptHandle = lenderResponseMessage
-			//					.getReceiptHandle();
-			//			// Print out the response
-			// TODO			System.out.println(...);
+			List<Message> messages = sqs.receiveMessage(receiveMessageRequest)
+					.getMessages();
+			for (Message lenderResponseMessage : messages) {
+				for (Entry<String, MessageAttributeValue> entry : lenderResponseMessage
+						.getMessageAttributes().entrySet()) {
+					if (entry.getKey().equals("uuid")
+							&& entry.getValue().getStringValue()
+									.equals(uuid.toString())) {
+
+						String messageRecieptHandle = lenderResponseMessage
+								.getReceiptHandle();
+						// Print out the response
+						System.out.println(lenderResponseMessage.getBody());
+
 						// delete the message from the queue
-			// TODO		...
-			//			response = true;
-			//		}
-			//	}
-			//}
+						sqs.deleteMessage(new DeleteMessageRequest(responseQ, messageRecieptHandle));
+						response = true;
+					}
+				}
+			}
 			if (!response) {
 				try {
-					Thread.sleep(5000);
+					Thread.sleep(500);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
